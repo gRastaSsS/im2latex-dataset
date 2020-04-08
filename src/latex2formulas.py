@@ -32,51 +32,64 @@ PATTERNS = [r"\\begin\{equation\}(.*?)\\end\{equation\}",
             r"\\\((.*?)\\\)"]
 DIR = ""
 
-#Number of bytes required for formula to be saved
+# Number of bytes required for formula to be saved
 MIN_LENGTH = 40
 MAX_LENGTH = 1024
+
 
 def get_formulas(latex):
     """ Returns detected latex formulas from given latex string
     Returns list of formula strings"""
-    ret = []
+    final_result = []
+    final_result_mod = []
     for pattern in PATTERNS:
-        res = re.findall(pattern, latex, re.DOTALL)
-        #Remove short ones
-        res = [x.strip().replace("\n","").replace("\r","") for x in res if 
-               MAX_LENGTH > len(x.strip()) > MIN_LENGTH]
-        ret.extend(res)
-    return ret
+        result = re.findall(pattern, latex, re.DOTALL)
+        # Remove short ones
+        result = [x.strip().replace("\n", "").replace("\r", "") for x in result if
+                  MAX_LENGTH > len(x.strip()) > MIN_LENGTH]
+        result_mod = [re.sub('\\label{.*}', '', x) for x in result]
+        final_result.extend(result)
+        final_result_mod.extend(result_mod)
+
+    return final_result, final_result_mod
+
 
 def main(directory):
-    latex_tars = glob.glob(directory+"*.tar.gz")
+    latex_tars = glob.glob(directory + "*.tar.gz")
     formulas = []
+    formulas_mod = []
     ctr = 0
     for filename in latex_tars:
         tar = tarfile.open(filename)
-        #List latex files
+        # List latex files
         files = tar.getnames()
-        #Loop over and extract results
+        # Loop over and extract results
         for latex_name in files:
-            if not "/" in latex_name: #.getnames() includes directory-only
+            if not "/" in latex_name:  # .getnames() includes directory-only
                 continue
             tar.extract(latex_name)
             latex = open(latex_name).read()
-            formulas.extend(get_formulas(latex))
+            final_result, final_result_mod = get_formulas(latex)
+            formulas.extend(final_result)
+            formulas_mod.extend(final_result_mod)
             os.remove(latex_name)
+
         ctr += 1
         print("Done {} of {}".format(ctr, len(latex_tars)))
     formulas = list(set(formulas))
     print("Parsed {} formulas".format(len(formulas)))
     print("Saving formulas...")
-    
+
     with open("formulas.txt", "w") as f:
         f.write("\n".join(formulas))
 
+    with open("formulas-mod.txt", "w") as f:
+        f.write("\n".join(formulas_mod))
+
+
 if __name__ == '__main__':
     if len(sys.argv) != 2:
-        print("usage: latex2formulas tar_directory\n"+    
+        print("usage: latex2formulas tar_directory\n" +
               "tar_directory should hold .tar files containing latex sources")
     else:
         main(sys.argv[1])
-
