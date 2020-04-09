@@ -147,10 +147,10 @@ def main(formula_list):
     print(datetime.now() - start_time)
 
     print("Deleting temporary files...")
-    os.system("rm -rf *.aux")
-    os.system("rm -rf *.log")
-    os.system("rm -rf *.pdf")
-    os.system("rm -rf *.tex")
+    os.system("find . -name \"*.aux\" -delete")
+    os.system("find . -name \"*.log\" -delete")
+    os.system("find . -name \"*.pdf\" -delete")
+    os.system("find . -name \"*.tex\" -delete")
 
     print("Writing to .lst files...")
 
